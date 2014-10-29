@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# jesteban.es/chroot-sftp-en-ubuntu-enjaulado
+
+for ((i=1;i<=$#;i++)); do
+
+	if [ ${!i} = "-u" ]; then 
+		((i++)) 
+   		username=${!i};
+
+  	elif [ ${!i} = "-p" ]; then 
+   		with_password=true;  
+	fi
+
+done;
+
+#
+if [[ -z "$username" ]]; then
+	echo ""
+	echo -e "  -u   Specify a username.                   \e[0;36mEj. sudo ./sftp-jail -u user.com\e[0m"
+	echo -e "  -p   Generate a password for user account. \e[0;36mEj. sudo ./sftp-jail -u user.com -p\e[0m"
+	echo ""
+	exit
+fi
+
+echo ""
+
+#
+if [[ -z "$with_password" ]]; then
+	with_password=false
+	echo "Creating $username without password..."
+	echo ""
+else
+	user_password=$(</dev/urandom tr -dc '1234567890!@#$%abcdefgGHIJKLMNOPQRSrstuvwxyzABCDEFTUVWXYZhijklmnopq' | head -c12)
+	echo "Creating $username with password..."
+	echo ""
+fi
+
+#
+hosting_base="/var/www/"
+
+hosting_jail=$hosting_base$username
+hosting_user="$hosting_jail/files"
+hosting_user_public="$hosting_user/public"
+hosting_user_logs="$hosting_user/logs"
+hosting_user_sym_www="$hosting_jail/www"
+
+chroot_sftp_group="sftp-users"
+
+server_side_scripting_group="www-data"
+
+
+if ! id $username > /dev/null 2>&1; then
+
+	# Comprobar si el directorio base para los usuarios existe
+	if [ ! -d "$hosting_base" ]; then
+		mkdir -p $hosting_base
+		echo -e "\e[0;32m[+]\e[0m $hosting_base created"
+	else
+		echo -e "\e[0;33m[-]\e[0m $hosting_base already exists"
+	fi
+
+	# Comprobar si el grupo para sftp existe
+	if ! grep -q "^$chroot_sftp_group:" /etc/group; then
+		groupadd $chroot_sftp_group
+		echo -e "\e[0;32m[+]\e[0m Group $chroot_sftp_group created"
+	else
+		echo -e "\e[0;33m[-]\e[0m Group $chroot_sftp_group already exists"
+	fi
+	echo ""
+
+	# Crear las carpeta base para el usuario, la carpeta public y logs
+	echo "Creating user folders..."
+	mkdir $hosting_jail
+	echo "   $hosting_jail"
+	mkdir $hosting_user
+	echo "   $hosting_user"
+	mkdir $hosting_user_public
+	echo "   $hosting_user_public"
+	mkdir $hosting_user_logs
+	echo "   $hosting_user_logs"
+	echo -e "\e[0;32m[+]\e[0m Done!"
+	echo ""
+
+	# Crear el usuario sin inicio de sesión, añadirlo al grupo y especificar su carpeta home
+	if $with_password; then
+		if useradd -s /bin/false -g $chroot_sftp_group -d $hosting_jail -p $(openssl passwd -1 $user_password) $username; then
+			user_created=true
+			echo -e "\e[0;32m[+]\e[0m User $username created with password  $user_password"
+		else
+			user_created=false
+			echo -e "\e[0;31m[-]\e[0m User $username cannot created"
+		fi
+	else
+		if useradd -s /bin/false -g $chroot_sftp_group -d $hosting_jail $username; then
+			user_created=true
+			echo -e "\e[0;32m[+]\e[0m User $username created without password"
+		else
+			user_created=false
+			echo -e "\e[0;31m[-]\e[0m User $username cannot created"
+		fi
+	fi
+
+	# Asignar los permisos adecuados para que el usuario pueda crear, eliminar y modificar archivos. 
+	# También le permite a php (www-data) o a cualquier otro grupo crear y modificar archivos, carpetas, etc.
+	if $user_created; then
+		chown root:$chroot_sftp_group $hosting_jail
+		chown -R $username:$server_side_scripting_group $hosting_user
+		chmod -R 775 $hosting_jail
+		ln -r -s $hosting_user_public $hosting_user_sym_www
+
+		echo -e "\e[0;32m[+]\e[0m Ready!"
+	else
+		echo -e "\e[0;31m[-]\e[0m Unable to create the user. Try with sudo ./sftp-jail options"
+	fi
+
+else
+
+	echo -e "\e[0;31m[-]\e[0m User already exists"
+
+fi
+
+echo ""

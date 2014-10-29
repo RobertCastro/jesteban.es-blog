@@ -39,16 +39,17 @@ Descargar y ejecutar.
 
 Si se ejecuta el script como en el ejemplo anterior, deberías ver algo similar a
 
-IMAGE
+[sftp-jail]:https://raw.githubusercontent.com/jestebanf/jesteban.es-blog/master/chroot-sftp/images/sftp-jail.png
+![][sftp-jail]
 
 Datos de conexión
 --
 
 **Usuario:** testdomain.com
 
-**Contraseña**: bla
-
-IMAGE
+**Contraseña**: !W779iF56rXN (la contraseña es aleatoria, cámbiala por la tuya)
+[filezilla]:https://raw.githubusercontent.com/jestebanf/jesteban.es-blog/master/chroot-sftp/images/filezilla-sftp-jail-example.png
+![][filezilla]
 
 Probar que PHP pueda escribir
 --

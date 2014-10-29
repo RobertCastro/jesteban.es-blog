@@ -26,7 +26,7 @@ sudo nano /etc/ssh/sshd_config
 Descargar y ejecutar.
 --
 
-    wget http://***
+    wget https://raw.githubusercontent.com/jestebanf/jesteban.es-blog/master/chroot-sftp/sftp-jail
 
     sudo chmod +x sftp-jail
 

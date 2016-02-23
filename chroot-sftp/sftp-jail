@@ -37,7 +37,7 @@ else
 fi
 
 #
-hosting_base="/var/www/"
+hosting_base="/var/www/html/web/jail/uremington/"
 
 hosting_jail=$hosting_base$username
 hosting_user="$hosting_jail/files"
